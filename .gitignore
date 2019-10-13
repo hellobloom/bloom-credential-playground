@@ -6,7 +6,6 @@ yarn-debug.log*
 yarn-error.log*
 build
 .env
-sqlite
 
 # Mac ignores
 .DS_Store
