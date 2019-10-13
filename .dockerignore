@@ -1,0 +1,14 @@
+node_modules
+node_modules/**/*
+
+build
+build/**/*
+.vscode
+.env
+.gitignore
+.git
+docker-*.yml
+Dockerfile
+README.md
+.env.debug
+sqlite

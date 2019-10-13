@@ -1,0 +1,36 @@
+{
+  "name": "bloom-credential-playground",
+  "version": "0.0.1",
+  "description": "Command line playground for Bloom credentials",
+  "main": "build/index.js",
+  "scripts": {},
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@bloomprotocol/attestations-lib": "^5.2.1-beta.5",
+    "eth-sig-util": "^2.1.2",
+    "ethereumjs-util": "^6.1.0",
+    "ethereumjs-wallet": "^0.6.3",
+    "getopts": "^2.2.4",
+    "inquirer": "^6.2.2",
+    "node-fetch": "^2.3.0",
+    "pg": "^7.8.0",
+    "sqlite3": "^4.0.6"
+  },
+  "devDependencies": {
+    "@bloomprotocol/verify-kit": "^1.0.2-beta.3",
+    "@types/chai": "^4.1.7",
+    "@types/express": "^4.16.0",
+    "@types/inquirer": "^6.5.0",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^10.3.4",
+    "@types/node-fetch": "^2.1.4",
+    "@types/sqlite3": "^3.1.4",
+    "dotenv": "^6.2.0",
+    "mocha": "^5.2.0",
+    "prettier": "^1.16.4",
+    "ts-node": "^7.0.1",
+    "tsc-watch": "^2.1.2",
+    "tslint": "^5.12.1",
+    "typescript": "^3.2.4"
+  }
+}
