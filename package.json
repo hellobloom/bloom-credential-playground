@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@bloomprotocol/attestations-lib": "^5.2.1-beta.5",
+    "@types/xml2json": "^0.11.0",
     "eth-sig-util": "^2.1.2",
     "ethereumjs-util": "^6.1.0",
     "ethereumjs-wallet": "^0.6.3",
@@ -14,7 +15,8 @@
     "inquirer": "^6.2.2",
     "node-fetch": "^2.3.0",
     "pg": "^7.8.0",
-    "sqlite3": "^4.0.6"
+    "sqlite3": "^4.0.6",
+    "xml2json": "^0.11.2"
   },
   "devDependencies": {
     "@bloomprotocol/verify-kit": "^1.0.2-beta.3",

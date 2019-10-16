@@ -4,12 +4,18 @@ import {
   AttestationTypeID,
   HashingLogic as HL,
 } from '@bloomprotocol/attestations-lib'
-import {TNDI} from './types/ndi'
-import * as NDI from '../issuers/ndi'
+
 const ethSigUtil = require('eth-sig-util')
 import * as fs from 'fs'
 import * as path from 'path'
+import * as xml2json from 'xml2json'
+
+import * as NDI from '../issuers/ndi'
+import {TNDI} from './types/ndi'
 import {NDISample} from './default/ndi'
+
+import * as Bank from '../issuers/bank'
+const BankSampleFile = '../default/FI_camt_054_sample.xml'
 
 // Dummy address
 const contractAddress = '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC'
@@ -75,20 +81,30 @@ export interface IDataSrc {
 }
 
 export const loadData = (type: string, filePath?: string) => {
-  let rawData = ''
   let data
-  if (filePath) {
-    rawData = fs.readFileSync(path.resolve(filePath), 'utf8')
-  }
   switch (type) {
     case 'ndi':
-      if (filePath) {
-        data = JSON.parse(rawData) as TNDI
-      } else {
+      if (!filePath) {
         data = NDISample
+      } else {
+        data = JSON.parse(fs.readFileSync(path.resolve(filePath), 'utf8')) as TNDI
       }
       break
-
+    case 'bank':
+      if (!filePath) {
+        filePath = BankSampleFile
+      }
+      const xml = fs.readFileSync(path.resolve(filePath), 'utf8')
+      data = xml2json.toJson(xml, {
+        object: true,
+        reversible: true,
+        coerce: false,
+        trim: true,
+        arrayNotation: true,
+        sanitize: true,
+      }) as any
+      data.sourceStr = xml
+      break
     default:
       throw new Error(`unsupported type ${type}`)
   }
@@ -99,7 +115,8 @@ export const getClaimNodes = (src: IDataSrc) => {
   switch (src.type) {
     case 'ndi':
       return NDI.getNodes(src.data)
-
+    case 'bank':
+      return Bank.getNodes(src.data)
     default:
       throw new Error(`unsupported type ${src.type}`)
   }
