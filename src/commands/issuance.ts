@@ -24,7 +24,7 @@ export const issuance: ICommand = {
           type: 'value',
           alias: 'type',
           required: true,
-          getChoices: () => ['ndi'],
+          getChoices: () => ['ndi', 'bank'],
         },
         {
           name: 's',
