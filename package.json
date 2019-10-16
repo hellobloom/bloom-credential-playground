@@ -8,6 +8,7 @@
   "dependencies": {
     "@bloomprotocol/attestations-lib": "^5.2.1-beta.5",
     "@types/xml2json": "^0.11.0",
+    "dayjs": "^1.8.16",
     "eth-sig-util": "^2.1.2",
     "ethereumjs-util": "^6.1.0",
     "ethereumjs-wallet": "^0.6.3",

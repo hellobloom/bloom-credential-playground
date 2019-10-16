@@ -5,6 +5,7 @@ import {
 import * as T from './types/camt.052.001.08'
 import * as VUB from './base'
 import * as R from 'ramda'
+import * as dayjs from 'dayjs'
 
 type TBaseAttIncomeTx = Required<
   Required<AD.TBaseAttIncomeStream>['transactions']
@@ -19,6 +20,20 @@ const providerFromNDICode = {
 export const getNodes = (d: any): HL.IClaimNode[] => {
   const nodes: HL.IClaimNode[] = []
 
+  const issuer =
+    (R.path(
+      [
+        'Document',
+        'BkToCstmrDbtCdtNtfctn',
+        'Ntfctn',
+        'Acct',
+        'Svcr',
+        'FinInstnId',
+        'BIC',
+      ],
+      d
+    ) as string | undefined) || 'Unknown'
+
   const ntf: T._AccountReport25 = d.Document.BkToCstmrDbtCdtNtfctn.Ntfctn
   if (!ntf.Ntry) return nodes
   const ntry: T.ReportEntry10[] = ntf.Ntry
@@ -27,7 +42,18 @@ export const getNodes = (d: any): HL.IClaimNode[] => {
   const earliest = bookdts[0]
   const latest = bookdts[bookdts.length - 1]
 
-  const txs: {expense: Array<TBaseAttIncomeTx>; income: Array<TBaseAttIncomeTx>} = {
+  const rawTxs: {
+    expense: {[key: string]: Partial<AD.TBaseAttIncomeStream>}
+    income: {[key: string]: Partial<AD.TBaseAttIncomeStream>}
+  } = {
+    expense: {},
+    income: {},
+  }
+
+  const txs: {
+    expense: Array<AD.TBaseAttIncomeStream>
+    income: Array<AD.TBaseAttIncomeStream>
+  } = {
     expense: [],
     income: [],
   }
@@ -54,87 +80,44 @@ export const getNodes = (d: any): HL.IClaimNode[] => {
     if (txdts) {
       party = txdts.map(td => R.path(['RltdPties', pk!, 'Nm'], td)).join(', ')
     }
-    txs[k as string][party] = tx
+    let txrr = rawTxs[k as string]
+    if (!txrr[party]) {
+      txrr[party] = {transactions: []}
+    }
+    txrr[party].transactions.push(tx)
   })
 
-  const summary: AD.TBaseAttIncomeSummary = {
-    start_date: earliest,
-    end_date: latest,
+  Object.keys(rawTxs).forEach((txk: string) => {
+    Object.keys(rawTxs[txk]).forEach((txpk: string) => {
+      let partyObj = rawTxs[txk][txpk]
+      let dts = partyObj.transactions.map((x: TBaseAttIncomeTx) => x.date).sort()
+      let start_date = dts[0]
+      let end_date = dts[dts.length - 1]
+      let is: AD.TBaseAttIncomeStream = {
+        start_date,
+        end_date,
+        length: dayjs(end_date).diff(dayjs(start_date), 'day'),
+        transactions: partyObj.transactions,
+      }
+      if (txk === 'income') {
+        txs.income.push(is)
+      } else if (txk === 'expense') {
+        txs.expense.push(is)
+      }
+    })
+  })
+
+  const dataNode: AD.TBaseAttIncome = {
+    '@context': VUB.githubContext,
+    generality: 1,
+    summary: {
+      start_date: earliest,
+      end_date: latest,
+    },
+    data: txs,
   }
 
-  const dataNode: AD.IBaseAttNDIData = {
-    date: new Date().toISOString(),
-    name: accountInfo.name.value as string,
-    country: 'SG',
-    biographic: {
-      dob: accountInfo.dob.value as string,
-      name: accountInfo.name.value as string,
-      gender: accountInfo.sex.desc as string,
-    },
-    '@provider_specific': {
-      name: accountInfo.name,
-      edulevel: accountInfo.edulevel,
-      nationality: accountInfo.nationality,
-      occupation: accountInfo.occupation,
-      employment: accountInfo.employment,
-      mobileno: accountInfo.mobileno,
-      mailadd: accountInfo.mailadd,
-      passportnumber: accountInfo.passportnumber,
-      passportexpirydate: accountInfo.passportexpirydate,
-      schoolname: accountInfo.schoolname,
-      dob: accountInfo.dob,
-      email: accountInfo.email,
-      householdincome: accountInfo.householdincome,
-      sex: accountInfo.sex,
-    },
-  }
-
-  nodes.push(VUB.getClaimNode(JSON.stringify(dataNode), 'ndi', 'NDI-SG', '3.0.0'))
-
-  nodes.push(
-    VUB.getClaimNode(
-      JSON.stringify({data: accountInfo.name}),
-      'full-name',
-      providerFromNDICode[accountInfo.name.source],
-      '4.0.0'
-    )
-  )
-
-  nodes.push(
-    VUB.getClaimNode(
-      JSON.stringify({data: accountInfo.mailadd}),
-      'address',
-      providerFromNDICode[accountInfo.mailadd.source],
-      '4.0.0'
-    )
-  )
-
-  nodes.push(
-    VUB.getClaimNode(
-      JSON.stringify({data: accountInfo.email}),
-      'email',
-      providerFromNDICode[accountInfo.email.source],
-      '4.0.0'
-    )
-  )
-
-  nodes.push(
-    VUB.getClaimNode(
-      JSON.stringify({data: accountInfo.mobileno}),
-      'phone',
-      providerFromNDICode[accountInfo.mobileno.source],
-      '4.0.0'
-    )
-  )
-
-  nodes.push(
-    VUB.getClaimNode(
-      JSON.stringify({data: accountInfo.householdincome}),
-      'income',
-      providerFromNDICode[accountInfo.householdincome.source],
-      '4.0.0'
-    )
-  )
+  nodes.push(VUB.getClaimNode(JSON.stringify(dataNode), 'income', issuer, '3.0.0'))
 
   return nodes
 }
