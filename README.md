@@ -48,6 +48,7 @@ Issue a credential from account 2 to account 1.
 In this example, credentials are extracted from the raw data in `src/issuers/default/ndi.ts` and formatted into the Selective Disclosure Merkle Tree format. This format gets stored on the client. Users can compute Verifiable Credentials and Verifiable Presentations when they wish to share the data with a third party.
 
 #### Specifying A Source File
+
 You can raw data from a file path by including the `src` field.
 
 `bin/ts-start.sh issuance create --type ndi --subjectId "subject@test.com" --issuerId "issuer@test.com" --src "src/issuers/default/ndi-sample.json"`
@@ -77,6 +78,10 @@ This command prints the formatted credential, computed from the Selective Disclo
 Format credentials into a Verifiable Presentation for sharing.
 
 `bin/ts-start.sh share share --id 1 --type income`
+
+Integrate with [share-kit](https://github.com/hellobloom/share-kit) request data JSON.
+
+`bin/ts-start.sh share share --id 1 --r JSON_COPIED_WHEN_CLICKING_QR`
 
 ### 4. Validation
 
@@ -151,7 +156,6 @@ Completed verification
 When you create an account, an AES encryption key is automatically generated. If you generated an account before this feature was available you can either generate a new account or add an encryption key to an existing account.
 
 `bin/ts-start.sh account updateKey --account subject@bloom.co --type Encryption`
-
 
 ## Extending the playground
 
