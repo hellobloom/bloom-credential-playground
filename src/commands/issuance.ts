@@ -112,7 +112,7 @@ export const issuance: ICommand = {
             )
             console.log(`encrypted credential components: ${encryptedComponents}`)
           } else {
-            console.log(
+            throw new Error(
               `Failed to encrypt credential due to missing AES key for subject ${subject.email}`
             )
           }
