@@ -65,6 +65,14 @@ const migrations: IMigration[] = [
     down: `
     `,
   },
+  {
+    name: 'encryptedColumn',
+    up: `
+      alter table attestationVault add column encryptedData text;
+      `,
+    down: `
+    `,
+  },
 ]
 
 export async function up(file?: string, logs: boolean = true) {

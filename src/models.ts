@@ -16,6 +16,7 @@ export interface AttestationVault {
   accountId: number
   signature: string
   data: string
+  encryptedData: string
 }
 
 export interface Presentations {

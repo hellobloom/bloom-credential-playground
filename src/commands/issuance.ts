@@ -53,6 +53,12 @@ export const issuance: ICommand = {
           type: 'value',
           alias: 'src',
         },
+        {
+          name: 'e',
+          type: 'flag',
+          alias: 'encrypt',
+          required: false,
+        },
       ],
       action: async (args: {
         create: {
@@ -60,8 +66,10 @@ export const issuance: ICommand = {
           subjectId: number // acct ID
           issuerId: number // acct ID
           src?: string
+          encrypt?: string
         }
       }) => {
+        const encrypt = toBoolean(args.create.encrypt)
         const subject = await new Repo().getAccount(args.create.subjectId)
         const subjectWallet = ethWallet.fromPrivateKey(toBuffer(subject.privateKey))
         const issuer = await new Repo().getAccount(args.create.issuerId)
@@ -95,24 +103,26 @@ export const issuance: ICommand = {
           issuerWallet.getPrivateKey()
         )
 
-        let componentsStore: string
-        if (subject.aesKey) {
-          try {
-            componentsStore = encryptAES(JSON.stringify(batchComponents), JSON.parse(
-              subject.aesKey
-            ) as number[])
-            console.log(`encrypted credential components: ${componentsStore}`)
-          } catch {
-            componentsStore = JSON.stringify(batchComponents)
+        let encryptedComponents: string = ''
+        if (encrypt) {
+          if (subject.aesKey) {
+            encryptedComponents = encryptAES(
+              JSON.stringify(batchComponents),
+              JSON.parse(subject.aesKey) as number[]
+            )
+            console.log(`encrypted credential components: ${encryptedComponents}`)
+          } else {
             console.log(
-              `failed to encrypt credential components: ${componentsStore}`
+              `Failed to encrypt credential due to missing AES key for subject ${subject.email}`
             )
           }
-        } else {
-          componentsStore = JSON.stringify(batchComponents)
         }
 
-        await new Repo().storeAttestation(subject.rowid, componentsStore)
+        await new Repo().storeAttestation(
+          subject.rowid,
+          JSON.stringify(batchComponents),
+          encryptedComponents
+        )
         return console.log('issued credential')
       },
     },
@@ -123,7 +133,7 @@ export const issuance: ICommand = {
       action: async () => {
         const attestations = await new Repo().getAttestations()
         attestations.forEach(a => {
-          console.log(`${a.id}) ${a.data}`)
+          console.log(`${a.id}) ${a.data} ${a.encryptedData}`)
         })
       },
     },
@@ -166,15 +176,23 @@ export const issuance: ICommand = {
           alias: 'decrypt',
           required: false,
         },
+        {
+          name: 'c',
+          type: 'flag',
+          alias: 'cyphertext',
+          required: false,
+        },
       ],
 
       action: async (args: {
         inspect: {
           id: string
           decrypt?: string
+          cyphertext?: string
         }
       }) => {
         const decrypt = toBoolean(args.inspect.decrypt)
+        const cyphertext = toBoolean(args.inspect.cyphertext)
         const attestations = await new Repo().getAttestations()
         const attestation = attestations.find(
           a => a.id === parseInt(args.inspect.id, 10)
@@ -184,12 +202,17 @@ export const issuance: ICommand = {
             const subject = await new Repo().getAccount(attestation.accountId)
             if (!subject.aesKey)
               throw new Error(`Failed to decrypt data for subject ${subject.email}`)
-            const decryptedComponents = decryptAES(attestation.data, JSON.parse(
-              subject.aesKey
-            ) as number[])
+            const decryptedComponents = decryptAES(
+              attestation.encryptedData,
+              JSON.parse(subject.aesKey) as number[]
+            )
             console.log(decryptedComponents)
           } else {
-            console.log(attestation.data)
+            if (cyphertext) {
+              console.log(attestation.encryptedData)
+            } else {
+              console.log(attestation.data)
+            }
           }
         } else {
           console.log(`No attestation data found for ${args.inspect.id}`)

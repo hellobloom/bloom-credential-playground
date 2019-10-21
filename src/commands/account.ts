@@ -114,6 +114,54 @@ export const account: ICommand = {
         )
       },
     },
+    updateKey: {
+      options: [
+        {
+          name: 'a',
+          type: 'value',
+          alias: 'account',
+          required: true,
+          getChoices: async () => {
+            const accts = await repo.getAccounts()
+            return accts.map(a => a.email)
+          },
+        },
+        {
+          name: 't',
+          type: 'value',
+          alias: 'type',
+          required: true,
+          getChoices: () => ['Identity', 'Encryption'],
+        },
+      ],
+
+      action: async (args: {
+        updateKey: {
+          account: string
+          type: string
+        }
+      }) => {
+        switch (args.updateKey.type) {
+          case 'Identity':
+            const wallet = ethWallet.generate()
+            await new Repo().changeEthKey(
+              args.updateKey.account,
+              wallet.getAddressString(),
+              wallet.getPrivateKeyString()
+            )
+            break
+          case 'Encryption':
+            await new Repo().changeAESKey(
+              args.updateKey.account,
+              JSON.stringify(pseudoRandomKey())
+            )
+            break
+
+          default:
+            break
+        }
+      },
+    },
     setDefault: {
       options: [
         {
