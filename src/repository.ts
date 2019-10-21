@@ -2,6 +2,7 @@ import * as sqlite3 from 'sqlite3'
 import {Account, AttestationVault, Presentations} from './models'
 import {HashingLogic as HL} from '@bloomprotocol/attestations-lib'
 import {IVerifiablePresentation} from '@bloomprotocol/verify-kit'
+import {decryptAES} from './utls/aes'
 
 export class SqliteConnection {
   public db: sqlite3.Database
@@ -81,15 +82,16 @@ export class Repo {
     email: string,
     address: string,
     privateKey: string,
+    aesKey: string,
     name: string
   ) {
     return this.connection.query(
       `
       insert into account
-      (email, address, privateKey, name) values
-      ${this.connection.values(1, 4)};
+      (email, address, privateKey, aesKey, name) values
+      ${this.connection.values(1, 5)};
     `,
-      [email, address, privateKey, name]
+      [email, address, privateKey, aesKey, name]
     )
   }
 
@@ -135,14 +137,15 @@ export class Repo {
 
   public async storeAttestation(
     accountId: number,
-    data: HL.IBloomBatchMerkleTreeComponents
+    data: string,
+    encryptedData: string
   ) {
     console.log(data)
     return this.connection.query(
       `
-      insert into attestationVault (accountId, data) values (?,?);
+      insert into attestationVault (accountId, data, encryptedData) values (?,?,?);
     `,
-      [accountId, JSON.stringify(data)]
+      [accountId, data, encryptedData]
     )
   }
 
@@ -168,6 +171,40 @@ export class Repo {
       throw new Error(`attestation: ${id.toString()} not found`)
     return {
       data: JSON.parse(attestation.data) as HL.IBloomBatchMerkleTreeComponents,
+      subjectId: attestation.accountId,
+    }
+  }
+
+  public async getEncryptedAttestation(
+    id: number,
+    decrypt: boolean
+  ): Promise<{
+    data: string
+    decryptedData: HL.IBloomBatchMerkleTreeComponents | null
+    subjectId: number
+  }> {
+    const attestations = await this.getAttestations()
+    const attestation = attestations.find(a => a.id === id)
+    if (attestation === undefined)
+      throw new Error(`attestation: ${id.toString()} not found`)
+    if (decrypt) {
+      const subject = await this.getAccount(attestation.accountId)
+      if (!subject.aesKey)
+        throw new Error(`Failed to decrypt data for subject ${subject.email}`)
+      const decryptedComponents = decryptAES(attestation.data, JSON.parse(
+        subject.aesKey
+      ) as number[])
+      return {
+        data: attestation.data,
+        decryptedData: JSON.parse(
+          decryptedComponents
+        ) as HL.IBloomBatchMerkleTreeComponents,
+        subjectId: attestation.accountId,
+      }
+    }
+    return {
+      data: attestation.data,
+      decryptedData: null,
       subjectId: attestation.accountId,
     }
   }
@@ -239,7 +276,7 @@ export class Repo {
     )
   }
 
-  public async changeKey(
+  public async changeEthKey(
     account: string | number,
     address: string,
     privateKey: string
@@ -248,10 +285,20 @@ export class Repo {
       `
       update account set
         address = ?,
-        privateKey = ?,
+        privateKey = ?
       where rowid = ? or email = ?;
     `,
       [address, privateKey, account, account]
+    )
+  }
+  public async changeAESKey(account: string | number, aesKey: string) {
+    return this.connection.query<void>(
+      `
+      update account set
+        aesKey = ?
+      where rowid = ? or email = ?;
+    `,
+      [aesKey, account, account]
     )
   }
 }
