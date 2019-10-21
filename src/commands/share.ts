@@ -6,9 +6,11 @@ import {
   getVerifiablePresentation,
   getPresentationProof,
 } from '@bloomprotocol/verify-kit'
-import {HashingLogic as HL} from '@bloomprotocol/attestations-lib'
+import {HashingLogic as HL, HashingLogic} from '@bloomprotocol/attestations-lib'
 import * as ethWallet from 'ethereumjs-wallet'
 import {toBuffer} from 'ethereumjs-util'
+
+import fetch from 'node-fetch'
 
 const repo = new Repo()
 
@@ -93,7 +95,7 @@ export const share: ICommand = {
           name: 't',
           type: 'value',
           alias: 'type',
-          required: true,
+          required: false,
           getChoices: async (args: {
             share: {
               id: string
@@ -105,17 +107,39 @@ export const share: ICommand = {
             return attestation.data.claimNodes.map(c => c.claimNode.type.type)
           },
         },
+        {
+          name: 'r',
+          type: 'value',
+          alias: 'requestData',
+          required: false,
+        },
       ],
       action: async (args: {
         share: {
           id: string
           type: string
+          requestData: string
         }
       }) => {
+        // Try to read in and use the requestData parameter
+        const {requestData: requestDataJSON} = args.share
+        let qrToken: string
+        let qrUrl: string
+        const qrTypes: string[] = []
+        if (requestDataJSON) {
+          const requestData = JSON.parse(requestDataJSON)
+          qrToken = requestData.token
+          qrUrl = requestData.url
+          qrTypes.push(...requestData.types)
+        } else {
+          qrToken = HashingLogic.generateNonce()
+          qrUrl = 'https://bloom.co/receiveData'
+          qrTypes.push(args.share.type)
+        }
+
         const attestation = await new Repo().getAttestation(
           parseInt(args.share.id, 10)
         )
-        const qrToken = HL.generateNonce()
         if (attestation) {
           const subject = await new Repo().getAccount(attestation.subjectId)
           const subjectWallet = ethWallet.fromPrivateKey(
@@ -123,20 +147,27 @@ export const share: ICommand = {
           )
           const data = attestation.data
           const verifiableCredentials: IVerifiableCredential[] = []
-          const node = data.claimNodes.find(
-            n => n.claimNode.type.type === args.share.type
-          )
-          if (!node) {
+
+          qrTypes.forEach(t => {
+            const node = data.claimNodes.find(n => n.claimNode.type.type === t)
+            if (node) {
+              verifiableCredentials.push(
+                getBatchCredential([], 'mainnet', data, node)
+              )
+            }
+          })
+          if (!verifiableCredentials.length) {
             return console.log(
-              `Type ${args.share.type} not found on attestation id ${args.share.id}`
+              `Types ${JSON.stringify(qrTypes)} not found on attestation id ${
+                args.share.id
+              }`
             )
           }
-          verifiableCredentials.push(getBatchCredential([], 'mainnet', data, node))
-          const presentationDomain = 'https://bloom.co/receiveData'
+
           const presentationProof = getPresentationProof(
             subjectWallet.getAddressString(),
             qrToken,
-            presentationDomain,
+            qrUrl,
             verifiableCredentials
           )
           const presentationSig = HL.signHash(
@@ -151,6 +182,13 @@ export const share: ICommand = {
           )
           await new Repo().storePresentation(subject.rowid, presentation)
           console.log(presentation)
+
+          console.log(`Making HTTP POST to '${qrUrl}...`)
+          const resp = await fetch(qrUrl, {
+            method: 'POST',
+            body: JSON.stringify(presentation),
+          })
+          console.log(resp.status, resp.statusText, await resp.json())
         } else {
           return console.log(`Attestation id ${args.share.id} not found`)
         }
@@ -168,6 +206,7 @@ export const share: ICommand = {
         })
       },
     },
+
     rm: {
       options: [
         {
