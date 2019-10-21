@@ -3,14 +3,12 @@ import inquirer = require('inquirer')
 export interface Account {
   defaultAccount: boolean
   rowid: number
-  pgpKey: string
   email: string
   pendingEmail?: string
   address: string
   privateKey: string
   name: string
-  loginCookie?: string
-  vaultToken?: string
+  aesKey?: string // stringified number array
 }
 
 export interface AttestationVault {

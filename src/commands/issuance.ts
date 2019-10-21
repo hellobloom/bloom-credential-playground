@@ -10,6 +10,8 @@ import {
   loadData,
 } from '../issuers/base'
 import {HashingLogic} from '@bloomprotocol/attestations-lib'
+import {encryptAES, decryptAES} from '../utls/aes'
+import {toBoolean} from '../utls/misc'
 
 const repo = new Repo()
 
@@ -92,7 +94,25 @@ export const issuance: ICommand = {
           requestNonce,
           issuerWallet.getPrivateKey()
         )
-        await new Repo().storeAttestation(subject.rowid, batchComponents)
+
+        let componentsStore: string
+        if (subject.aesKey) {
+          try {
+            componentsStore = encryptAES(JSON.stringify(batchComponents), JSON.parse(
+              subject.aesKey
+            ) as number[])
+            console.log(`encrypted credential components: ${componentsStore}`)
+          } catch {
+            componentsStore = JSON.stringify(batchComponents)
+            console.log(
+              `failed to encrypt credential components: ${componentsStore}`
+            )
+          }
+        } else {
+          componentsStore = JSON.stringify(batchComponents)
+        }
+
+        await new Repo().storeAttestation(subject.rowid, componentsStore)
         return console.log('issued credential')
       },
     },
@@ -140,15 +160,40 @@ export const issuance: ICommand = {
             return attestations.map(a => a.id.toString())
           },
         },
+        {
+          name: 'd',
+          type: 'flag',
+          alias: 'decrypt',
+          required: false,
+        },
       ],
 
-      action: async (args: {inspect: {id: string}}) => {
+      action: async (args: {
+        inspect: {
+          id: string
+          decrypt?: string
+        }
+      }) => {
+        const decrypt = toBoolean(args.inspect.decrypt)
         const attestations = await new Repo().getAttestations()
-        console.log(
-          JSON.stringify(
-            attestations.find(a => a.id === parseInt(args.inspect.id, 10))
-          )
+        const attestation = attestations.find(
+          a => a.id === parseInt(args.inspect.id, 10)
         )
+        if (attestation) {
+          if (decrypt) {
+            const subject = await new Repo().getAccount(attestation.accountId)
+            if (!subject.aesKey)
+              throw new Error(`Failed to decrypt data for subject ${subject.email}`)
+            const decryptedComponents = decryptAES(attestation.data, JSON.parse(
+              subject.aesKey
+            ) as number[])
+            console.log(decryptedComponents)
+          } else {
+            console.log(attestation.data)
+          }
+        } else {
+          console.log(`No attestation data found for ${args.inspect.id}`)
+        }
       },
     },
   },

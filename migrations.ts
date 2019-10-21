@@ -57,6 +57,14 @@ const migrations: IMigration[] = [
       drop table if exists sharedCredentials;
     `,
   },
+  {
+    name: 'aeskey',
+    up: `
+      alter table account add column aesKey text;
+      `,
+    down: `
+    `,
+  },
 ]
 
 export async function up(file?: string, logs: boolean = true) {

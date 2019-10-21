@@ -2,6 +2,7 @@ import {Repo} from '../repository'
 import * as ethWallet from 'ethereumjs-wallet'
 import {toBuffer} from 'ethereumjs-util'
 import {ICommand} from '../models'
+import {pseudoRandomKey} from '../utls/aes'
 
 const repo = new Repo()
 
@@ -40,7 +41,6 @@ export const account: ICommand = {
         if (!args.create.privateKey) {
           wallet = ethWallet.generate()
         } else {
-          console.log(args.create.privateKey)
           wallet = ethWallet.fromPrivateKey(toBuffer(args.create.privateKey))
         }
 
@@ -48,6 +48,7 @@ export const account: ICommand = {
           args.create.email,
           `0x${wallet.getAddress().toString('hex')}`,
           `0x${wallet.getPrivateKey().toString('hex')}`,
+          JSON.stringify(pseudoRandomKey()),
           args.create.name
         )
 

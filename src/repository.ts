@@ -81,15 +81,16 @@ export class Repo {
     email: string,
     address: string,
     privateKey: string,
+    aesKey: string,
     name: string
   ) {
     return this.connection.query(
       `
       insert into account
-      (email, address, privateKey, name) values
-      ${this.connection.values(1, 4)};
+      (email, address, privateKey, aesKey, name) values
+      ${this.connection.values(1, 5)};
     `,
-      [email, address, privateKey, name]
+      [email, address, privateKey, aesKey, name]
     )
   }
 
@@ -133,16 +134,13 @@ export class Repo {
     )
   }
 
-  public async storeAttestation(
-    accountId: number,
-    data: HL.IBloomBatchMerkleTreeComponents
-  ) {
+  public async storeAttestation(accountId: number, data: string) {
     console.log(data)
     return this.connection.query(
       `
       insert into attestationVault (accountId, data) values (?,?);
     `,
-      [accountId, JSON.stringify(data)]
+      [accountId, data]
     )
   }
 
