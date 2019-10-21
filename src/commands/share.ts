@@ -99,7 +99,7 @@ export const share: ICommand = {
           name: 't',
           type: 'value',
           alias: 'type',
-          required: true,
+          required: false,
           getChoices: async (args: {
             share: {
               id: string
@@ -129,13 +129,16 @@ export const share: ICommand = {
         const {requestData: requestDataJSON} = args.share
         let qrToken: string
         let qrUrl: string
+        const qrTypes: string[] = []
         if (requestDataJSON) {
           const requestData = JSON.parse(requestDataJSON)
           qrToken = requestData.token
           qrUrl = requestData.url
+          qrTypes.push(...requestData.types)
         } else {
           qrToken = HashingLogic.generateNonce()
           qrUrl = 'https://bloom.co/receiveData'
+          qrTypes.push(args.share.type)
         }
 
         const attestation = await new Repo().getAttestation(
@@ -148,15 +151,23 @@ export const share: ICommand = {
           )
           const data = attestation.data
           const verifiableCredentials: IVerifiableCredential[] = []
-          const node = data.claimNodes.find(
-            n => n.claimNode.type.type === args.share.type
-          )
-          if (!node) {
+
+          qrTypes.forEach(t => {
+            const node = data.claimNodes.find(n => n.claimNode.type.type === t)
+            if (node) {
+              verifiableCredentials.push(
+                getBatchCredential([], 'mainnet', data, node)
+              )
+            }
+          })
+          if (!verifiableCredentials.length) {
             return console.log(
-              `Type ${args.share.type} not found on attestation id ${args.share.id}`
+              `Types ${JSON.stringify(qrTypes)} not found on attestation id ${
+                args.share.id
+              }`
             )
           }
-          verifiableCredentials.push(getBatchCredential([], 'mainnet', data, node))
+
           const presentationProof = getPresentationProof(
             subjectWallet.getAddressString(),
             qrToken,
@@ -176,6 +187,7 @@ export const share: ICommand = {
           await new Repo().storePresentation(subject.rowid, presentation)
           console.log(presentation)
 
+          console.log(`Making HTTP POST to '${qrUrl}...`)
           const resp = await fetch(qrUrl, {
             method: 'POST',
             body: JSON.stringify(presentation),
