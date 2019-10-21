@@ -1,4 +1,5 @@
 # Credential Playground
+
 This CLI is an introduction to the Bloom Protocol credential structure and a framework for developing issuers.
 
 # Installing with Git
@@ -17,6 +18,7 @@ bin/ts-start.sh interactive
 ## Features
 
 ### Interactive Mode
+
 Run the CLI in interactive mode to use the autocompletion features.
 
 ```
@@ -24,6 +26,7 @@ bin/ts-start.sh interactive
 ```
 
 ### 1. Account Creation
+
 First you will need to use the `account` subcommand to create a local account
 
 `bin/ts-start.sh account create --email subject@test.com --name "John Doe"`
@@ -35,9 +38,10 @@ Create a second account to play the part of the credential issuer.
 `bin/ts-start.sh account create --email issuer@test.com --name "Issuer Company"`
 
 ### 2. Credential Issuance
+
 Issue a credential from account 2 to account 1.
 
-**The sample commands in this doc use sample data from [SG-Verify](https://public.cloud.myinfo.gov.sg/sg-verify/sgverify-webhook-specs.html#section/Understanding-the-Data-Structure/Data-Items-(Top-Level))**
+**The sample commands in this doc use sample data from [SG-Verify](<https://public.cloud.myinfo.gov.sg/sg-verify/sgverify-webhook-specs.html#section/Understanding-the-Data-Structure/Data-Items-(Top-Level)>)**
 
 `bin/ts-start.sh issuance create --type ndi --subjectId "subject@test.com" --issuerId "issuer@test.com"`
 
@@ -45,27 +49,29 @@ In this example, credentials are extracted from the raw data in `src/issuers/def
 
 You can also read raw data from a file path by including the `src` field.
 
-`bin/ts-start.sh issuance create --type ndi --subjectId "subject@test.com" --issuerId "issuer@test.com" --src "path/to/file.json"`
+`bin/ts-start.sh issuance create --type ndi --subjectId "subject@test.com" --issuerId "issuer@test.com" --src "src/issuers/default/ndi-sample.json"`
 
 ### 3. Sharing
+
 Compute credentials from the Selective Disclosure Merkle Tree.
 
 `bin/ts-start.sh share preview --id 1 --type income`
 
-This command prints the formatted credentail, computed from the Selective Disclosure Merkle Tree.
+This command prints the formatted credential, computed from the Selective Disclosure Merkle Tree.
 
 Format credentials into a Verifiable Presentation for sharing.
 
 `bin/ts-start.sh share share --id 1 --type income`
 
 ### 4. Validation
+
 Verify the integrity of the shared Verifiable Presentation and perform all of the embedded proofs.
 
 `bin/ts-start.sh verify verify --id 1`
 
 Run the above command with the verbose flag to see each verification logged.
 
-`bin/ts-start.sh verify verify --id 7 --verbose`
+`bin/ts-start.sh verify verify --id 1 --verbose`
 
 ```
 ✔ Presentation context is present
@@ -126,8 +132,8 @@ Completed verification
 ```
 
 ## Extending the playground
-It should be fairly easy to add additional issuer types to the demo. See how it is done in `src/issuers/ndi.ts` and `src/issuers/base.ts > loadData, getClaimNodes`.
 
+It should be fairly easy to add additional issuer types to the demo. See how it is done in `src/issuers/ndi.ts` and `src/issuers/base.ts > loadData, getClaimNodes`.
 
 # Dependencies
 
@@ -144,7 +150,6 @@ docker run -v $HOME/.bloom-credential-playground:/app/sqlite -it hellobloom/bloo
 # Hot reloading and debugging
 
 Use the VSCode debug profiles to attach the debugger to the server or the tests or both
-
 
 using `bin/debug.sh` will enable hot reloading.
 
