@@ -60,10 +60,6 @@ export const share: ICommand = {
           parseInt(args.preview.id, 10)
         )
         if (attestation) {
-          const subject = await new Repo().getAccount(attestation.subjectId)
-          const subjectWallet = ethWallet.fromPrivateKey(
-            toBuffer(subject.privateKey)
-          )
           const data = attestation.data
           const verifiableCredentials: IVerifiableCredential[] = []
           const node = data.claimNodes.find(

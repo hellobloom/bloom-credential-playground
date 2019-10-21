@@ -57,6 +57,22 @@ const migrations: IMigration[] = [
       drop table if exists sharedCredentials;
     `,
   },
+  {
+    name: 'aeskey',
+    up: `
+      alter table account add column aesKey text;
+      `,
+    down: `
+    `,
+  },
+  {
+    name: 'encryptedColumn',
+    up: `
+      alter table attestationVault add column encryptedData text;
+      `,
+    down: `
+    `,
+  },
 ]
 
 export async function up(file?: string, logs: boolean = true) {

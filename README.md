@@ -47,9 +47,24 @@ Issue a credential from account 2 to account 1.
 
 In this example, credentials are extracted from the raw data in `src/issuers/default/ndi.ts` and formatted into the Selective Disclosure Merkle Tree format. This format gets stored on the client. Users can compute Verifiable Credentials and Verifiable Presentations when they wish to share the data with a third party.
 
-You can also read raw data from a file path by including the `src` field.
+#### Specifying A Source File
+You can raw data from a file path by including the `src` field.
 
 `bin/ts-start.sh issuance create --type ndi --subjectId "subject@test.com" --issuerId "issuer@test.com" --src "src/issuers/default/ndi-sample.json"`
+
+#### Encrypting The Credential Components
+
+Include the `--encrypt` flag to encrypt the credential components for the subject using their AES key.
+
+`bin/ts-start.sh issuance create --type ndi --subjectId "subject@test.com" --issuerId "issuer@test.com" --encrypt`
+
+Inspect the encrypted cyphertext with the `inspect` command
+
+`bin/ts-start.sh issuance inspect --id 1 --cyphertext`
+
+Decrypt the cyphertext with the `--decrypt` flag
+
+`bin/ts-start.sh issuance inspect --id 1 --decrypt`
 
 ### 3. Sharing
 
@@ -130,6 +145,13 @@ Verified data of type income from subject 0xd0d45aac45bf6d33b0f6d7544522866d929f
 Verified data: {"data":{"lastupdated":"2019-09-17","high":{"value":4999},"source":"2","classification":"C","low":{"value":4000}}}
 Completed verification
 ```
+
+### Encrypted Data Storage
+
+When you create an account, an AES encryption key is automatically generated. If you generated an account before this feature was available you can either generate a new account or add an encryption key to an existing account.
+
+`bin/ts-start.sh account updateKey --account subject@bloom.co --type Encryption`
+
 
 ## Extending the playground
 

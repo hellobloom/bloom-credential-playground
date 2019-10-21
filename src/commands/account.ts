@@ -2,6 +2,7 @@ import {Repo} from '../repository'
 import * as ethWallet from 'ethereumjs-wallet'
 import {toBuffer} from 'ethereumjs-util'
 import {ICommand} from '../models'
+import {pseudoRandomKey} from '../utls/aes'
 
 const repo = new Repo()
 
@@ -40,7 +41,6 @@ export const account: ICommand = {
         if (!args.create.privateKey) {
           wallet = ethWallet.generate()
         } else {
-          console.log(args.create.privateKey)
           wallet = ethWallet.fromPrivateKey(toBuffer(args.create.privateKey))
         }
 
@@ -48,6 +48,7 @@ export const account: ICommand = {
           args.create.email,
           `0x${wallet.getAddress().toString('hex')}`,
           `0x${wallet.getPrivateKey().toString('hex')}`,
+          JSON.stringify(pseudoRandomKey()),
           args.create.name
         )
 
@@ -111,6 +112,54 @@ export const account: ICommand = {
             )
           )
         )
+      },
+    },
+    updateKey: {
+      options: [
+        {
+          name: 'a',
+          type: 'value',
+          alias: 'account',
+          required: true,
+          getChoices: async () => {
+            const accts = await repo.getAccounts()
+            return accts.map(a => a.email)
+          },
+        },
+        {
+          name: 't',
+          type: 'value',
+          alias: 'type',
+          required: true,
+          getChoices: () => ['Identity', 'Encryption'],
+        },
+      ],
+
+      action: async (args: {
+        updateKey: {
+          account: string
+          type: string
+        }
+      }) => {
+        switch (args.updateKey.type) {
+          case 'Identity':
+            const wallet = ethWallet.generate()
+            await new Repo().changeEthKey(
+              args.updateKey.account,
+              wallet.getAddressString(),
+              wallet.getPrivateKeyString()
+            )
+            break
+          case 'Encryption':
+            await new Repo().changeAESKey(
+              args.updateKey.account,
+              JSON.stringify(pseudoRandomKey())
+            )
+            break
+
+          default:
+            break
+        }
       },
     },
     setDefault: {
