@@ -157,6 +157,16 @@ When you create an account, an AES encryption key is automatically generated. If
 
 `bin/ts-start.sh account updateKey --account subject@bloom.co --type Encryption`
 
+
+### Share Kit Integration
+The CLI can communicate with any deployed Bloom Share Kit instance. In order to POST the signed Verifiable Presentation to a destination, specify the `requestData` field in the `share` command. The snippet below uses the JSON retrieved from a Share Kit QR code on https://bloom-starter-ndi.herokuapp.com.
+
+```
+bin/ts-start.sh share share --id 15 --requestData {"action":"request_attestation_data","token":"9a70cc32-dc86-471e-9b4a-1489e5064eaa","url":"https://bloom-starter-ndi.herokuapp.com/scan?share-kit-from=qr","org_logo_url":"https://bloom.co/favicon.png","org_name":"Bloom Starter","org_usage_policy_url":"https://bloom.co/legal/terms","org_privacy_policy_url":"https://bloom.co/legal/privacy","types":["email","full-name","address","phone","income"]}
+```
+
+![demo](./demos/CLI&#32;Share&#32;Kit.gif)
+
 ## Extending the playground
 
 It should be fairly easy to add additional issuer types to the demo. See how it is done in `src/issuers/ndi.ts` and `src/issuers/base.ts > loadData, getClaimNodes`.
