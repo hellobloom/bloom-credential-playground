@@ -1,3 +1,7 @@
+:warning: **_Notice_** :warning:
+
+This library is no longer maintained.
+
 # Credential Playground
 
 This CLI is an introduction to the Bloom Protocol credential structure and a framework for developing issuers.
